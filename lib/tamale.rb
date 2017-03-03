@@ -54,18 +54,20 @@ module Tamale
     end
 
     def initialize(template, *args)
-      @template, @args = template, args
+      @template = template
+      @args     = args
+      @acc      = ''
     end
 
-    def call(acc = '')
-      @acc = acc
+    def call
+      instance_exec(*args, &template)
 
-      instance_exec(*@args, &@template)
-
-      @acc
+      acc
     end
 
     private
+
+    attr_reader :template, :args, :acc
 
     # Helpers
 
@@ -74,23 +76,23 @@ module Tamale
     end
 
     def text(val)
-      @acc << val.to_s
+      acc << val.to_s
     end
 
     def div(attributes = {})
-      @acc << Tags.for(:normal, :div, attributes, (Context.new(Proc.new).call if block_given?)).to_s
+      acc << Tags.for(:normal, :div, attributes, (Context.new(Proc.new).call if block_given?)).to_s
     end
 
     def ul(attributes = {})
-      @acc << Tags.for(:normal, :ul, attributes, (Context.new(Proc.new).call if block_given?)).to_s
+      acc << Tags.for(:normal, :ul, attributes, (Context.new(Proc.new).call if block_given?)).to_s
     end
 
     def li(attributes = {})
-      @acc << Tags.for(:normal, :li, attributes, (Context.new(Proc.new).call if block_given?)).to_s
+      acc << Tags.for(:normal, :li, attributes, (Context.new(Proc.new).call if block_given?)).to_s
     end
 
     def input(attributes = {})
-      @acc << Tags.for(:void, :input, attributes).to_s
+      acc << Tags.for(:void, :input, attributes).to_s
     end
   end
 end
