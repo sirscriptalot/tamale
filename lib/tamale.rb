@@ -15,12 +15,38 @@ module Tamale
 
   class Context
     module Tags
-      class Base
-        def initialize(element, attributes, contents)
+      class Void
+        TAGS = [
+          :area,
+          :base,
+          :br,
+          :col,
+          :embed,
+          :hr,
+          :img,
+          :input,
+          :keygen,
+          :link,
+          :menuitem,
+          :meta,
+          :param,
+          :source,
+          :track,
+          :wbr,
+        ].freeze
+
+        def initialize(element, attributes)
           @element    = element
           @attributes = attributes
-          @contents   = contents
         end
+
+        def to_s
+          "<#{open} />"
+        end
+
+        private
+
+        attr_reader :element, :attributes
 
         def open
           attributes\
@@ -28,30 +54,95 @@ module Tamale
             .inject([element]) { |acc, key| acc << "#{key}=\"#{attributes[key]}\"" }
             .join(' ')
         end
+      end
+
+      class Normal
+        TAGS = [
+          :a, :abbr, :acronym, :address,
+          :applet, :article, :aside, :audio,
+          :b, :basefont, :bdi, :bdo,
+          :bgsound, :big, :blink, :blockquote,
+          :body, :button, :canvas, :caption,
+          :center, :cite, :code, :colgroup,
+          :command, :content, :data, :datalist,
+          :dd, :del, :details, :dfn,
+          :dialog, :dir, :div, :dl,
+          :dt, :element, :em, :fieldset,
+          :figcaption, :figure, :font, :footer,
+          :form, :frame, :frameset,
+          :h1, :h2, :h3, :h4, :h5, :h6,
+          :head, :header, :hgroup, :html,
+          :i, :iframe, :image, :ins,
+          :isindex, :kbd, :label, :legend,
+          :li, :listing, :main, :map,
+          :mark, :marquee, :menu, :meter,
+          :multicol, :nav, :nobr, :noembed,
+          :noframes, :noscript, :object, :ol,
+          :optgroup, :option, :output, :p,
+          :picture, :plaintext, :pre, :progress,
+          :q, :rp, :rt, :rtc,
+          :ruby, :s, :samp, :script,
+          :section, :select, :shadow, :slot,
+          :small, :spacer, :span, :strike,
+          :strong, :style, :sub, :summary,
+          :sup, :table, :tbody, :td,
+          :template, :textarea, :tfoot, :th,
+          :thead, :time, :title, :tr,
+          :tt, :u, :ul, :var,
+          :video, :xmp,
+        ].freeze
+
+        def initialize(element, attributes, contents)
+          @element    = element
+          @attributes = attributes
+          @contents   = contents
+        end
+
+        def to_s
+          "<#{open}>#{contents}</#{element}>"
+        end
 
         private
 
         attr_reader :element, :attributes, :contents
-      end
 
-      class Void < Base
-        def to_s
-          "<#{open} />"
+        def open
+          attributes\
+            .keys
+            .inject([element]) { |acc, key| acc << "#{key}=\"#{attributes[key]}\"" }
+            .join(' ')
         end
       end
 
-      class Normal < Base
-        def to_s
-          "<#{open}>#{contents}</#{element}>"
+      def self.included(base)
+        define_normal_tag_helpers(base)
+        define_void_tag_helpers(base)
+      end
+
+      private
+
+      def self.define_normal_tag_helpers(base)
+        Normal::TAGS.each do |element|
+          base.class_eval <<-RUBY
+            def #{element}(attributes = {})
+              acc << Normal.new(:#{element}, attributes, (Context.new(Proc.new).call if block_given?)).to_s
+            end
+          RUBY
         end
       end
 
-      KLASSES = { void: Void, normal: Normal }.freeze
-
-      def self.for(type, element, attributes, contents = nil)
-        KLASSES[type].new(element, attributes, contents)
+      def self.define_void_tag_helpers(base)
+        Void::TAGS.each do |element|
+          base.class_eval <<-RUBY
+            def #{element}(attributes = {})
+              acc << Void.new(:#{element}, attributes).to_s
+            end
+          RUBY
+        end
       end
     end
+
+    include Tags
 
     def initialize(template, *args)
       @template = template
@@ -77,22 +168,6 @@ module Tamale
 
     def text(val)
       acc << val.to_s
-    end
-
-    def div(attributes = {})
-      acc << Tags.for(:normal, :div, attributes, (Context.new(Proc.new).call if block_given?)).to_s
-    end
-
-    def ul(attributes = {})
-      acc << Tags.for(:normal, :ul, attributes, (Context.new(Proc.new).call if block_given?)).to_s
-    end
-
-    def li(attributes = {})
-      acc << Tags.for(:normal, :li, attributes, (Context.new(Proc.new).call if block_given?)).to_s
-    end
-
-    def input(attributes = {})
-      acc << Tags.for(:void, :input, attributes).to_s
     end
   end
 end
