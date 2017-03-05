@@ -139,7 +139,7 @@ module Tamale
         def self.helper_template(tag, builder)
           <<-RUBY
             def #{tag}(attributes = {})
-              contents = Tamale.call(Proc.new) if block_given?
+              contents = Context.new(Proc.new).call if block_given?
 
               acc << #{builder}.build('#{tag}', attributes, contents)
             end
