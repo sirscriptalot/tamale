@@ -1,43 +1,33 @@
 require          'minitest/autorun'
 require_relative '../lib/tamale'
 
-describe 'Tamale::define' do
+describe 'Tamale#render' do
   before do
-    @template = ->() { text 'template' }
-
-    Tamale.define(:foo, &@template)
-  end
-
-  it 'defines a template' do
-    assert_equal(@template, Tamale.templates[:foo])
-  end
-end
-
-describe 'Tamale::render' do
-  before do
-    Tamale.define(:foobar) { |left, right| text "#{left}#{right}" }
+    @template = Tamale.new { |left, right|
+      text "#{left}#{right}"
+    }
   end
 
   it 'calls template with arguments' do
-    assert_equal('foobar', Tamale.render(:foobar, 'foo', 'bar'))
+    assert_equal('foobar', @template.render('foo', 'bar'))
   end
 end
 
-describe 'Tamale :simple' do
+describe 'Text elements' do
   before do
-    Tamale.define(:simple) do |value|
+    @template = Tamale.new { |value|
       div { text 'simple' }
-    end
+    }
   end
 
   it 'renders an html string' do
-    assert_equal('<div>simple</div>', Tamale.render(:simple))
+    assert_equal('<div>simple</div>', @template.render)
   end
 end
 
-describe 'Tamale :nested' do
+describe 'Nested elements' do
   before do
-    Tamale.define(:nested) {
+    @template = Tamale.new {
       ul {
         li { text 'one' }
         li { text 'two' }
@@ -45,14 +35,30 @@ describe 'Tamale :nested' do
     }
   end
 
-  it 'renders' do
-    assert_equal('<ul><li>one</li><li>two</li></ul>', Tamale.render(:nested))
+  it 'renders in proper context' do
+    assert_equal('<ul><li>one</li><li>two</li></ul>', @template.render)
+  end
+end
+
+describe 'Multinested elements' do
+  before do
+    @template = Tamale.new {
+      ul {
+        li {
+          text 'one'; text 'two'
+        }
+      }
+    }
+  end
+
+  it 'renders in proper context' do
+    assert_equal('<ul><li>onetwo</li></ul>', @template.render)
   end
 end
 
 describe 'Void elements' do
   before do
-    Tamale.define(:void) {
+    @template = Tamale.new {
       div {
         input(type: 'text')
       }
@@ -60,18 +66,18 @@ describe 'Void elements' do
   end
 
   it 'never prints a closing tag' do
-    assert_equal('<div><input type="text" /></div>', Tamale.render(:void))
+    assert_equal('<div><input type="text" /></div>', @template.render)
   end
 end
 
 describe 'Normal elements' do
   before do
-    Tamale.define(:normal) {
-      div { div { } }
+    @template = Tamale.new {
+      div { div }
     }
   end
 
   it 'always prints a closing tag' do
-    assert_equal('<div><div></div></div>', Tamale.render(:normal))
+    assert_equal('<div><div></div></div>', @template.render)
   end
 end
