@@ -1,26 +1,27 @@
 # Tamale
 
-*Hot* Tamale is a DSL for generating HTML.
+Tamale is a DSL for generating HTML.
+
+## Installation
+
+For use with bundler, add this line to your application's Gemfile:
+
+```ruby
+gem 'tamale'
+```
+
+And then run bundle from the command line:
+
+    $ bundle
 
 ## Usage
 
 ```ruby
-model = {
-  title: 'Home Page',
-  items: [:one, :two, :three]
-}
-
-Tamale.define(:app) { |model|
+template = Tamale.new { |title|
   div(id: 'app') {
-    h1 { text model.title }
-
-    ul {
-      model.items.each { |item|
-        li { text item }
-      }
-    }
+    h1 { text title }
   }
 }
 
-Tamale.render(:app, model)
+template.render('Hot Tamale!')
 ```
